@@ -23,7 +23,7 @@ app.post("/api/generate", async (req, res) => {
   try {
     const { prompt } = req.body;
 
-    if (!prompt) {
+    if (!prompt || !prompt.trim()) {
       return res.status(400).json({
         message: "Prompt is required",
       });
@@ -31,12 +31,26 @@ app.post("/api/generate", async (req, res) => {
 
     const response = await ai.models.generateContent({
       model: "gemini-3.6-flash",
-      contents: prompt,
+      contents: `
+Return your response as valid JSON.
+
+The JSON must contain:
+- category
+- priority
+- issue
+- response
+
+User request:
+${prompt}
+`,
+      config: {
+        responseMimeType: "application/json",
+      },
     });
 
     res.json({
       success: true,
-      response: response.text,
+      response: JSON.parse(response.text),
     });
   } catch (error) {
     console.error("AI API Error:", error);

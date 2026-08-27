@@ -2,15 +2,50 @@ const express = require("express");
 const cors = require("cors");
 require("dotenv").config();
 
+const { GoogleGenAI } = require("@google/genai");
+
 const app = express();
 
 app.use(cors());
 app.use(express.json());
 
+const ai = new GoogleGenAI({
+  apiKey: process.env.GEMINI_API_KEY,
+});
+
 app.get("/", (req, res) => {
   res.json({
     message: "AI Text Assistant Backend is running",
   });
+});
+
+app.post("/api/generate", async (req, res) => {
+  try {
+    const { prompt } = req.body;
+
+    if (!prompt) {
+      return res.status(400).json({
+        message: "Prompt is required",
+      });
+    }
+
+    const response = await ai.models.generateContent({
+      model: "gemini-3.6-flash",
+      contents: prompt,
+    });
+
+    res.json({
+      success: true,
+      response: response.text,
+    });
+  } catch (error) {
+    console.error("AI API Error:", error);
+
+    res.status(500).json({
+      success: false,
+      message: "Failed to generate AI response",
+    });
+  }
 });
 
 const PORT = 5000;

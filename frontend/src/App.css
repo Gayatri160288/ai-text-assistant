@@ -1,8 +1,19 @@
 .app {
   max-width: 800px;
-  margin: 50px auto;
+  margin: 40px auto;
   padding: 20px;
+  font-family: Arial, sans-serif;
+}
+
+h1 {
   text-align: center;
+  margin-bottom: 30px;
+}
+
+.input-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
 textarea {
@@ -10,19 +21,35 @@ textarea {
   min-height: 150px;
   padding: 12px;
   font-size: 16px;
-  margin-bottom: 15px;
+  resize: vertical;
+  box-sizing: border-box;
 }
 
 button {
-  padding: 10px 25px;
+  padding: 12px 20px;
   font-size: 16px;
   cursor: pointer;
 }
 
-.response {
+button:disabled {
+  cursor: not-allowed;
+}
+
+.result-section {
   margin-top: 30px;
-  padding: 20px;
+}
+
+.result-card {
   border: 1px solid #ddd;
-  text-align: left;
-  min-height: 100px;
+  padding: 15px;
+  margin-bottom: 15px;
+  border-radius: 8px;
+}
+
+.result-card h3 {
+  margin-top: 0;
+}
+
+.result-card p {
+  line-height: 1.6;
 }

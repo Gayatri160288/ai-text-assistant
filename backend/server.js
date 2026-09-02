@@ -2,15 +2,20 @@ const express = require("express");
 const cors = require("cors");
 require("dotenv").config();
 
-const { GoogleGenAI } = require("@google/genai");
+const rateLimit = require("express-rate-limit");
 
 const app = express();
 
 app.use(cors());
 app.use(express.json());
 
-const ai = new GoogleGenAI({
-  apiKey: process.env.GEMINI_API_KEY,
+const generateLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 5, // Maximum 5 requests per minute
+  message: {
+    success: false,
+    message: "Too many AI requests. Please try again after a minute.",
+  },
 });
 
 app.get("/", (req, res) => {
@@ -23,41 +28,56 @@ app.post("/api/generate", async (req, res) => {
   try {
     const { prompt } = req.body;
 
+    // Validation
     if (!prompt || !prompt.trim()) {
       return res.status(400).json({
-        message: "Prompt is required",
+        success: false,
+        message: "Please enter a customer issue.",
       });
     }
 
-    const response = await ai.models.generateContent({
-      model: "gemini-3.6-flash",
-      contents: `
-Return your response as valid JSON.
+    if (prompt.trim().length < 10) {
+      return res.status(400).json({
+        success: false,
+        message: "Customer issue must contain at least 10 characters.",
+      });
+    }
 
-The JSON must contain:
-- category
-- priority
-- issue
-- response
+    if (prompt.trim().length > 2000) {
+      return res.status(400).json({
+        success: false,
+        message: "Customer issue is too long. Maximum 2000 characters allowed.",
+      });
+    }
 
-User request:
-${prompt}
-`,
-      config: {
-        responseMimeType: "application/json",
+    // Send request to n8n
+    const n8nResponse = await fetch(process.env.N8N_WEBHOOK_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
       },
+      body: JSON.stringify({
+        prompt: prompt.trim(),
+      }),
     });
 
-    res.json({
-      success: true,
-      response: JSON.parse(response.text),
-    });
+    const data = await n8nResponse.json();
+
+    if (!n8nResponse.ok) {
+      return res.status(n8nResponse.status).json({
+        success: false,
+        message: data.message || "n8n workflow failed.",
+      });
+    }
+
+    // Return n8n response to React
+    res.json(data);
   } catch (error) {
-    console.error("AI API Error:", error);
+    console.error("n8n Error:", error);
 
     res.status(500).json({
       success: false,
-      message: "Failed to generate AI response",
+      message: "Failed to process customer issue.",
     });
   }
 });

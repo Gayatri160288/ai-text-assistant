@@ -53,3 +53,11 @@ button:disabled {
 .result-card p {
   line-height: 1.6;
 }
+.error-message {
+  margin-top: 15px;
+  padding: 12px;
+  border: 1px solid #ff0000;
+  border-radius: 6px;
+  color: #cc0000;
+  background: #ffecec;
+}

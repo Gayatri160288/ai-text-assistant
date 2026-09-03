@@ -21,7 +21,7 @@
     {
       "parameters": {
         "respondWith": "json",
-        "responseBody": "={{ {\n  success: true,\n  message: \"n8n workflow completed successfully\"\n} }}",
+        "responseBody": "={{ (() => {\n  const geminiText = $('Message a model').item.json.content.parts[0].text;\n\n  const result = JSON.parse(geminiText);\n\n  return {\n    success: true,\n    response: {\n      category: result.category,\n      priority: result.priority,\n      issue: result.issue,\n      response: result.response\n    }\n  };\n})() }}",
         "options": {}
       },
       "type": "n8n-nodes-base.respondToWebhook",
@@ -50,19 +50,19 @@
             },
             {
               "column": "category",
-              "value": "={{ $json.category }}"
+              "value": "={{ JSON.parse($('Message a model').item.json.content.parts[0].text).category }}"
             },
             {
               "column": "priority",
-              "value": "={{ $json.priority }}"
+              "value": "={{ JSON.parse($('Message a model').item.json.content.parts[0].text).priority }}"
             },
             {
               "column": "issue",
-              "value": "={{ $json.issue }}"
+              "value": "={{ JSON.parse($('Message a model').item.json.content.parts[0].text).issue }}"
             },
             {
               "column": "ai_response",
-              "value": "={{ $json.ai_response }}"
+              "value": "={{ JSON.parse($('Message a model').item.json.content.parts[0].text).response }}"
             }
           ]
         },
@@ -85,16 +85,39 @@
     },
     {
       "parameters": {
-        "jsCode": "const customerIssue =\n  $('Webhook').first().json.body?.prompt || \"\";\n\nreturn [\n  {\n    json: {\n      customer_issue: customerIssue,\n\n      category: \"Shipping and Delivery\",\n\n      priority: \"High\",\n\n      issue: \"Laptop order has not arrived after 10 days.\",\n\n      ai_response:\n        \"We sincerely apologize for the delay with your laptop order. Please provide your order number so we can check the delivery status.\"\n    }\n  }\n];"
+        "modelId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "models/gemini-3-flash-preview",
+          "cachedResultName": "models/gemini-3-flash-preview",
+          "cachedResultUrl": ""
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=You are an AI customer support assistant.\n\nAnalyze the customer's issue below and return ONLY valid JSON.\n\nCustomer issue:\n{{$json.body.prompt}}\n\nReturn exactly this format:\n\n{\n  \"category\": \"Shipping and Delivery\",\n  \"priority\": \"High\",\n  \"issue\": \"short description of the issue\",\n  \"response\": \"professional customer support response\"\n}\n\nDo not use markdown.\nDo not add any text outside the JSON."
+            },
+            {}
+          ]
+        },
+        "jsonOutput": true,
+        "builtInTools": {},
+        "options": {}
       },
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1.2,
       "position": [
-        592,
+        224,
         0
       ],
-      "id": "551ccc3a-410c-4089-abb3-cd5a47e42208",
-      "name": "Mock AI Response"
+      "id": "64cb4d68-5fa6-4986-9753-ba0e86b910ea",
+      "name": "Message a model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "pnOpeqqCxGvMqtoz",
+          "name": "Google Gemini(PaLM) Api account 4"
+        }
+      }
     }
   ],
   "pinData": {},
@@ -103,7 +126,7 @@
       "main": [
         [
           {
-            "node": "Mock AI Response",
+            "node": "Message a model",
             "type": "main",
             "index": 0
           }
@@ -121,7 +144,7 @@
         ]
       ]
     },
-    "Mock AI Response": {
+    "Message a model": {
       "main": [
         [
           {
@@ -138,7 +161,7 @@
     "executionOrder": "v1",
     "binaryMode": "separate"
   },
-  "versionId": "e6b5b797-20da-4ba7-98b3-df87a628800b",
+  "versionId": "a43cd08e-3231-429a-9cb1-e01b86ed1560",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "2963e5a8e27ddeb1eaa6f0119af54c8e9240d08fa891de7ebc2dcb2473edb528"

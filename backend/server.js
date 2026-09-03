@@ -28,10 +28,7 @@ app.post("/api/generate", generateLimiter, async (req, res) => {
   try {
     const { prompt } = req.body;
 
-    // -------------------------
     // Validation
-    // -------------------------
-
     if (!prompt || !prompt.trim()) {
       return res.status(400).json({
         success: false,
@@ -53,10 +50,7 @@ app.post("/api/generate", generateLimiter, async (req, res) => {
       });
     }
 
-    // -------------------------
     // Send request to n8n
-    // -------------------------
-
     const n8nResponse = await fetch(process.env.N8N_WEBHOOK_URL, {
       method: "POST",
       headers: {
@@ -67,32 +61,12 @@ app.post("/api/generate", generateLimiter, async (req, res) => {
       }),
     });
 
-    // -------------------------
-    // Read n8n response safely
-    // -------------------------
-
+    // Read response as text first
     const responseText = await n8nResponse.text();
 
-    console.log("n8n Status:", n8nResponse.status);
-    console.log("n8n Response:", responseText);
+    console.log("n8n response:", responseText);
 
-    // Check HTTP status first
-    if (!n8nResponse.ok) {
-      let errorData = {};
-
-      try {
-        errorData = responseText ? JSON.parse(responseText) : {};
-      } catch (error) {
-        console.error("n8n returned invalid JSON:", responseText);
-      }
-
-      return res.status(n8nResponse.status).json({
-        success: false,
-        message: errorData.message || "n8n workflow failed.",
-      });
-    }
-
-    // Check for empty response
+    // Handle empty response
     if (!responseText.trim()) {
       return res.status(502).json({
         success: false,
@@ -106,19 +80,23 @@ app.post("/api/generate", generateLimiter, async (req, res) => {
     try {
       data = JSON.parse(responseText);
     } catch (error) {
-      console.error("Invalid JSON received from n8n:");
-      console.error(responseText);
+      console.error("Invalid JSON from n8n:", responseText);
 
       return res.status(502).json({
         success: false,
-        message: "n8n returned invalid JSON.",
+        message: "n8n returned an invalid response.",
       });
     }
 
-    // -------------------------
-    // Return n8n response
-    // -------------------------
+    // Handle n8n errors
+    if (!n8nResponse.ok) {
+      return res.status(n8nResponse.status).json({
+        success: false,
+        message: data.message || "n8n workflow failed.",
+      });
+    }
 
+    // Return n8n response to React
     return res.json(data);
   } catch (error) {
     console.error("n8n Error:", error);

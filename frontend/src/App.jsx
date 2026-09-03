@@ -10,21 +10,18 @@ function App() {
   const generateResponse = async () => {
     const trimmedPrompt = prompt.trim();
 
-    // Empty validation
     if (!trimmedPrompt) {
       setError("Please enter a customer issue.");
       setResult(null);
       return;
     }
 
-    // Minimum length validation
     if (trimmedPrompt.length < 10) {
       setError("Customer issue must contain at least 10 characters.");
       setResult(null);
       return;
     }
 
-    // Maximum length validation
     if (trimmedPrompt.length > 2000) {
       setError("Customer issue is too long. Maximum 2000 characters allowed.");
       setResult(null);
@@ -75,50 +72,144 @@ function App() {
     }
   };
 
+  const copyResponse = async () => {
+    if (!result?.response) return;
+
+    try {
+      await navigator.clipboard.writeText(result.response);
+    } catch (error) {
+      console.error("Copy failed:", error);
+    }
+  };
+
   return (
     <div className="app">
-      <h1>AI Customer Support Assistant</h1>
+      {/* Header */}
+      <header className="header">
+        <div className="brand">
+          <div className="brand-icon">✦</div>
 
-      <div className="input-section">
-        <label>Customer Issue</label>
-
-        <textarea
-          placeholder="Enter customer's complaint..."
-          value={prompt}
-          onChange={(e) => setPrompt(e.target.value)}
-        />
-
-        <button onClick={generateResponse} disabled={loading}>
-          {loading ? "Analyzing..." : "Generate"}
-        </button>
-        {error && <div className="error-message">{error}</div>}
-      </div>
-
-      {result && (
-        <div className="result-section">
-          <h2>AI Analysis</h2>
-
-          <div className="result-card">
-            <h3>Category</h3>
-            <p>{result.category}</p>
-          </div>
-
-          <div className="result-card">
-            <h3>Priority</h3>
-            <p>{result.priority}</p>
-          </div>
-
-          <div className="result-card">
-            <h3>Issue</h3>
-            <p>{result.issue}</p>
-          </div>
-
-          <div className="result-card">
-            <h3>Suggested Response</h3>
-            <p>{result.response}</p>
+          <div>
+            <h2>AI Support</h2>
+            <span>Customer Assistant</span>
           </div>
         </div>
-      )}
+
+        <div className="status">
+          <span className="status-dot"></span>
+          AI Online
+        </div>
+      </header>
+
+      {/* Hero */}
+      <main className="main-content">
+        <section className="hero">
+          <div className="hero-badge">✨ Powered by AI Automation</div>
+
+          <h1>
+            Turn customer issues into
+            <span> smart responses.</span>
+          </h1>
+
+          <p>
+            Analyze customer complaints, identify priority, and generate
+            professional support responses instantly.
+          </p>
+        </section>
+
+        {/* Input Card */}
+        <section className="input-card">
+          <div className="section-heading">
+            <div>
+              <h2>Customer Issue</h2>
+              <p>Describe the customer's problem below.</p>
+            </div>
+
+            <span className="ai-badge">AI</span>
+          </div>
+
+          <textarea
+            value={prompt}
+            onChange={(e) => setPrompt(e.target.value)}
+            placeholder="Example: My laptop order has not arrived after 10 days. Please help me."
+            maxLength={2000}
+          />
+
+          <div className="input-footer">
+            <span>{prompt.length} / 2000 characters</span>
+
+            <button onClick={generateResponse} disabled={loading}>
+              {loading ? (
+                <>
+                  <span className="spinner"></span>
+                  Analyzing...
+                </>
+              ) : (
+                <>✨ Generate Response</>
+              )}
+            </button>
+          </div>
+
+          {error && (
+            <div className="error-message">
+              <span>⚠</span>
+              {error}
+            </div>
+          )}
+        </section>
+
+        {/* Result */}
+        {result && (
+          <section className="results">
+            <div className="results-heading">
+              <div>
+                <span className="small-label">AI OUTPUT</span>
+                <h2>Support Analysis</h2>
+              </div>
+
+              <span className="success-badge">✓ Generated</span>
+            </div>
+
+            <div className="analysis-grid">
+              <div className="result-card">
+                <span className="card-label">CATEGORY</span>
+                <h3>{result.category}</h3>
+              </div>
+
+              <div className="result-card priority-card">
+                <span className="card-label">PRIORITY</span>
+                <h3>{result.priority}</h3>
+              </div>
+            </div>
+
+            <div className="result-card full-card">
+              <span className="card-label">IDENTIFIED ISSUE</span>
+              <p>{result.issue}</p>
+            </div>
+
+            <div className="response-card">
+              <div className="response-header">
+                <div>
+                  <span className="card-label">SUGGESTED RESPONSE</span>
+                  <h3>Customer Support Reply</h3>
+                </div>
+
+                <button className="copy-button" onClick={copyResponse}>
+                  Copy
+                </button>
+              </div>
+
+              <p>{result.response}</p>
+            </div>
+          </section>
+        )}
+      </main>
+
+      {/* Footer */}
+      <footer>
+        <span>AI Customer Support Assistant</span>
+        <span>React • Node.js • n8n • Gemini • MySQL</span>
+      </footer>
     </div>
   );
 }

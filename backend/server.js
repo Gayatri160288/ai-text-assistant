@@ -10,8 +10,8 @@ app.use(cors());
 app.use(express.json());
 
 const generateLimiter = rateLimit({
-  windowMs: 60 * 1000, // 1 minute
-  max: 5, // Maximum 5 requests per minute
+  windowMs: 60 * 1000,
+  max: 5,
   message: {
     success: false,
     message: "Too many AI requests. Please try again after a minute.",
@@ -24,11 +24,14 @@ app.get("/", (req, res) => {
   });
 });
 
-app.post("/api/generate", async (req, res) => {
+app.post("/api/generate", generateLimiter, async (req, res) => {
   try {
     const { prompt } = req.body;
 
+    // -------------------------
     // Validation
+    // -------------------------
+
     if (!prompt || !prompt.trim()) {
       return res.status(400).json({
         success: false,
@@ -50,7 +53,10 @@ app.post("/api/generate", async (req, res) => {
       });
     }
 
+    // -------------------------
     // Send request to n8n
+    // -------------------------
+
     const n8nResponse = await fetch(process.env.N8N_WEBHOOK_URL, {
       method: "POST",
       headers: {
@@ -61,21 +67,63 @@ app.post("/api/generate", async (req, res) => {
       }),
     });
 
-    const data = await n8nResponse.json();
+    // -------------------------
+    // Read n8n response safely
+    // -------------------------
 
+    const responseText = await n8nResponse.text();
+
+    console.log("n8n Status:", n8nResponse.status);
+    console.log("n8n Response:", responseText);
+
+    // Check HTTP status first
     if (!n8nResponse.ok) {
+      let errorData = {};
+
+      try {
+        errorData = responseText ? JSON.parse(responseText) : {};
+      } catch (error) {
+        console.error("n8n returned invalid JSON:", responseText);
+      }
+
       return res.status(n8nResponse.status).json({
         success: false,
-        message: data.message || "n8n workflow failed.",
+        message: errorData.message || "n8n workflow failed.",
       });
     }
 
-    // Return n8n response to React
-    res.json(data);
+    // Check for empty response
+    if (!responseText.trim()) {
+      return res.status(502).json({
+        success: false,
+        message: "n8n returned an empty response.",
+      });
+    }
+
+    // Convert response to JSON
+    let data;
+
+    try {
+      data = JSON.parse(responseText);
+    } catch (error) {
+      console.error("Invalid JSON received from n8n:");
+      console.error(responseText);
+
+      return res.status(502).json({
+        success: false,
+        message: "n8n returned invalid JSON.",
+      });
+    }
+
+    // -------------------------
+    // Return n8n response
+    // -------------------------
+
+    return res.json(data);
   } catch (error) {
     console.error("n8n Error:", error);
 
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: "Failed to process customer issue.",
     });

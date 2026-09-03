@@ -1,0 +1,149 @@
+{
+  "name": "AI Customer Support Automation",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "ai-customer-support",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "684015e9-e717-489c-baaf-d334fc86af73",
+      "name": "Webhook",
+      "webhookId": "9bb4f3b6-8137-4dfa-9f66-0f7157c29072"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ {\n  success: true,\n  message: \"n8n workflow completed successfully\"\n} }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1040,
+        0
+      ],
+      "id": "3e5e35b7-d371-4966-9a7c-daec4d3e4835",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "table": {
+          "__rl": true,
+          "value": "customer_issues",
+          "mode": "list",
+          "cachedResultName": "customer_issues"
+        },
+        "dataMode": "defineBelow",
+        "valuesToSend": {
+          "values": [
+            {
+              "column": "customer_issue",
+              "value": "={{ $('Webhook').item.json.body.prompt }}"
+            },
+            {
+              "column": "category",
+              "value": "={{ $json.category }}"
+            },
+            {
+              "column": "priority",
+              "value": "={{ $json.priority }}"
+            },
+            {
+              "column": "issue",
+              "value": "={{ $json.issue }}"
+            },
+            {
+              "column": "ai_response",
+              "value": "={{ $json.ai_response }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.mySql",
+      "typeVersion": 2.5,
+      "position": [
+        816,
+        0
+      ],
+      "id": "54e6d95c-0ffd-431f-90b4-a4b068a9534b",
+      "name": "Insert rows in a table",
+      "credentials": {
+        "mySql": {
+          "id": "zshu4sO9f0JHOLEi",
+          "name": "MySQL account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const customerIssue =\n  $('Webhook').first().json.body?.prompt || \"\";\n\nreturn [\n  {\n    json: {\n      customer_issue: customerIssue,\n\n      category: \"Shipping and Delivery\",\n\n      priority: \"High\",\n\n      issue: \"Laptop order has not arrived after 10 days.\",\n\n      ai_response:\n        \"We sincerely apologize for the delay with your laptop order. Please provide your order number so we can check the delivery status.\"\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        592,
+        0
+      ],
+      "id": "551ccc3a-410c-4089-abb3-cd5a47e42208",
+      "name": "Mock AI Response"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Mock AI Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert rows in a table": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mock AI Response": {
+      "main": [
+        [
+          {
+            "node": "Insert rows in a table",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "e6b5b797-20da-4ba7-98b3-df87a628800b",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "2963e5a8e27ddeb1eaa6f0119af54c8e9240d08fa891de7ebc2dcb2473edb528"
+  },
+  "nodeGroups": [],
+  "id": "l8OG8xgCN2D4y5jo",
+  "tags": []
+}
